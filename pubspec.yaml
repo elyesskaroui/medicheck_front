@@ -1,0 +1,42 @@
+name: flutter_application_1
+description: "A new Flutter project."
+
+publish_to: 'none' # Remove this line if you wish to publish to pub.dev
+
+version: 1.0.0+1
+
+environment:
+  sdk: ">=3.0.0 <4.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_login: ^5.0.0
+  cupertino_icons: ^1.0.8
+  lottie: ^1.2.1
+  dio: ^5.1.1
+  json_annotation: ^4.8.1
+  http: ^0.13.4
+  provider: ^6.1.2
+  web_socket_channel: ^2.4.0
+  shared_preferences: ^2.0.15
+  iconly: ^1.0.0
+  socket_io_client: ^2.0.3
+  http_parser: ^4.0.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^4.0.0
+  build_runner: ^2.4.6
+  json_serializable: ^6.7.1
+  image_picker: ^0.8.4+4
+
+flutter:
+  uses-material-design: true
+
+  assets:
+    - asset/images/medical_background.png
+    - asset/images/stope.jpg
+    - asset/images/test.jpg
+    - asset/images/logo1.png

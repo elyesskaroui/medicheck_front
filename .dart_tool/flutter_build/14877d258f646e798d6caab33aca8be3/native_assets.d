@@ -1,0 +1,1 @@
+ C:\\Users\\Elyess\\Downloads\\Medicheck_Frontend-user\\.dart_tool\\flutter_build\\14877d258f646e798d6caab33aca8be3\\native_assets.yaml: 
