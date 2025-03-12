@@ -1,0 +1,36 @@
+name: flutter_application_1
+description: "A new Flutter project."
+
+publish_to: 'none' # Remove this line if you wish to publish to pub.dev
+
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.5.4
+
+dependencies:
+  flutter:
+    sdk: flutter
+  http: ^1.3.0
+  image: ^4.0.17
+  flutter_login: ^5.0.0
+  cupertino_icons: ^1.0.8
+  lottie: ^1.2.1
+  
+  shared_preferences: ^2.5.1
+
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^4.0.0
+
+flutter:
+  uses-material-design: true
+
+  assets:
+    - asset/images/medical_background.png
+    - asset/images/stope.jpg
+    - asset/images/test.jpg
+    - asset/images/logo1.png
+    - asset/images/report.jpg
