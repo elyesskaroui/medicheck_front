@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_application_1/Home1Screen.dart';
-import 'package:flutter_application_1/Services/auth_api/login.dart';
+import 'package:flutter_application_1/models/SignUpResponse.dart';
 import 'package:flutter_application_1/screens/SignUp_Screen.dart';
+import 'package:flutter_application_1/screens/main_screen.dart';
 import 'package:flutter_application_1/screens/password_input.dart';
 import 'package:flutter_application_1/screens/text_input_field.dart';
+import 'package:flutter_application_1/services/api_service.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
+// Définition de kBodyText
 const kBodyText = TextStyle(
   fontSize: 16,
   color: Colors.white,
@@ -13,7 +16,7 @@ const kBodyText = TextStyle(
 );
 
 class LoginScreen extends StatefulWidget {
-  const LoginScreen({Key? key}) : super(key: key);
+  const LoginScreen({super.key});
 
   @override
   _LoginScreenState createState() => _LoginScreenState();
@@ -23,10 +26,24 @@ class _LoginScreenState extends State<LoginScreen> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   bool _isLoading = false;
+  final bool _isSuccess = false;
 
-  Future<void> _submitForm() async {
+  @override
+  void initState() {
+    super.initState();
+  }
+
+  // Submit form and perform login
+  void _submitForm() async {
     if (_emailController.text.isEmpty || _passwordController.text.isEmpty) {
-      _showSnackBar('Please fill in all fields.', Colors.red);
+      _showSnackBar('Please enter both email and password.', Colors.red);
+      return;
+    }
+
+    final emailRegex =
+        RegExp(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$');
+    if (!emailRegex.hasMatch(_emailController.text)) {
+      _showSnackBar('Please enter a valid email address.', Colors.red);
       return;
     }
 
@@ -34,26 +51,100 @@ class _LoginScreenState extends State<LoginScreen> {
       _isLoading = true;
     });
 
-    final result = await LoginApi.login(
-      email: _emailController.text,
-      password: _passwordController.text,
-    );
-
-    setState(() {
-      _isLoading = false;
-    });
-
-    if (result['success'] == true) {
-      _showSnackBar(result['message'], Colors.green);
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => MedInfoVerifierApp()),
+    try {
+      final apiService = ApiService();
+      final loginResponse = await apiService.login(
+        _emailController.text,
+        _passwordController.text,
       );
-    } else {
-      _showSnackBar(result['message'], Colors.red);
+
+      if (loginResponse != null) {
+        // Save user data to SharedPreferences - use consistent key name
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('accessToken', loginResponse.accessToken);
+
+        try {
+          var userInfo =
+              await apiService.getUserByToken(loginResponse.accessToken);
+
+          if (userInfo != null) {
+            // Create user instance
+            final User user = User(
+              id: userInfo.id,
+              name: userInfo.name,
+              email: userInfo.email,
+              profilePicture: userInfo.profilePicture,
+            );
+
+            // Navigate to main screen
+            if (mounted) {
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => MainScreen(
+                    isDarkMode: false,
+                    onDarkModeChanged: (value) {},
+                    loggedUser: user,
+                  ),
+                ),
+              );
+            }
+          } else {
+            // Fallback if user info is null but login was successful
+            _handleFallbackNavigation(loginResponse);
+          }
+        } catch (userError) {
+          print('Error getting user info: $userError');
+          // Handle the error by still allowing login with basic info
+          _handleFallbackNavigation(loginResponse);
+        }
+      } else {
+        _showSnackBar(
+            'Login failed. Please check your credentials.', Colors.red);
+      }
+    } catch (e) {
+      print('Login error: $e');
+      _showSnackBar('Login failed: ${e.toString()}', Colors.red);
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
   }
 
+  // Handle navigation when user info can't be retrieved
+  void _handleFallbackNavigation(dynamic loginResponse) {
+    // Extract username from email
+    String username = _emailController.text.split('@')[0];
+    // Capitalize first letter
+    String displayName = username.isNotEmpty
+        ? username[0].toUpperCase() + username.substring(1)
+        : "User";
+
+    final User fallbackUser = User(
+      id: loginResponse.userId ?? "unknown",
+      name: displayName,
+      email: _emailController.text,
+      profilePicture: "",
+    );
+
+    if (mounted) {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (context) => MainScreen(
+            isDarkMode: false,
+            onDarkModeChanged: (value) {},
+            loggedUser: fallbackUser,
+          ),
+        ),
+      );
+    }
+  }
+
+  // Show Snackbar
   void _showSnackBar(String message, Color color) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -78,23 +169,23 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
               ),
             ),
-            // Overlay sombre pour améliorer la lisibilité
+            // Effet de flou pour améliorer la lisibilité
             Container(
               color: Colors.black.withOpacity(0.5),
             ),
-            // Contenu scrollable
+            // Contenu principal
             SingleChildScrollView(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   const SizedBox(height: 100),
-                  // Logo centré
+                  // Logo avec fond transparent
                   Center(
                     child: Container(
                       width: 160,
                       height: 160,
-                      decoration: BoxDecoration(
-                        color: Colors.white24,
+                      decoration: const BoxDecoration(
+                        color: Colors.white24, // Fond transparent
                         shape: BoxShape.circle,
                       ),
                       child: const Padding(
@@ -107,7 +198,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                   ),
                   const SizedBox(height: 20),
-                  // Titre "Sign In"
+                  // Titre principal
                   const Center(
                     child: Text(
                       'Sign In',
@@ -151,59 +242,40 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                         ),
                         const SizedBox(height: 25),
-                        // Bouton "Login" avec UX améliorée
+                        // Bouton de connexion avec animation
                         Center(
-                          child: GestureDetector(
-                            onTap: _isLoading ? null : _submitForm,
-                            child: AnimatedContainer(
-                              duration: const Duration(milliseconds: 300),
-                              width: _isLoading ? 70 : 180,
-                              height: 55,
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(30),
-                                gradient: const LinearGradient(
-                                  colors: [Color(0xFF1E88E5), Color(0xFF42A5F5)],
-                                  begin: Alignment.topLeft,
-                                  end: Alignment.bottomRight,
-                                ),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withOpacity(0.2),
-                                    blurRadius: 8,
-                                    offset: const Offset(2, 4),
-                                  ),
-                                ],
-                              ),
-                              child: _isLoading
-                                  ? const Center(
-                                      child: CircularProgressIndicator(
-                                        color: Colors.white,
-                                      ),
-                                    )
-                                  : Row(
-                                      mainAxisAlignment: MainAxisAlignment.center,
-                                      children: const [
-                                        Icon(Icons.login, color: Colors.white, size: 24),
-                                        SizedBox(width: 8),
-                                        Text(
-                                          'Login',
-                                          style: TextStyle(
-                                            color: Colors.white,
-                                            fontSize: 18,
-                                            fontWeight: FontWeight.bold,
-                                            letterSpacing: 1.2,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 500),
+                            width: _isLoading ? 70 : 150,
+                            height: 50,
+                            decoration: BoxDecoration(
+                              color: _isSuccess ? Colors.green : Colors.blue,
+                              borderRadius: BorderRadius.circular(25),
                             ),
+                            child: _isLoading
+                                ? const CircularProgressIndicator(
+                                    color: Colors.white,
+                                  )
+                                : TextButton(
+                                    onPressed: () {
+                                      _submitForm();
+                                    },
+                                    child: const Text(
+                                      'Login',
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ),
                           ),
                         ),
                         const SizedBox(height: 25),
                       ],
                     ),
                   ),
-                  // Lien "Create New Account"
+                  // Lien "Créer un compte"
                   GestureDetector(
                     onTap: () {
                       Navigator.push(
@@ -216,8 +288,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     child: Container(
                       decoration: const BoxDecoration(
                         border: Border(
-                          bottom: BorderSide(width: 1, color: Colors.white),
-                        ),
+                            bottom: BorderSide(width: 1, color: Colors.white)),
                       ),
                       child: const Text(
                         'Create New Account',

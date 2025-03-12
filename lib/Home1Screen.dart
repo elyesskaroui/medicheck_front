@@ -100,95 +100,102 @@ class _MedInfoVerifierHomeState extends State<MedInfoVerifierHome>
   }
 
   /***************************** */
-Future<Map<String, dynamic>?> startImageVerification() async {
-  final imageUrl = _urlController.text;
-  final url = Uri.parse('http://192.168.242.40:3001/scraper/analyzeimage?imageUrl=$imageUrl');
+  Future<Map<String, dynamic>?> startImageVerification() async {
+    final imageUrl = _urlController.text;
+    final url = Uri.parse(
+        'http://172.16.1.63:3005/scraper/analyzeimage?imageUrl=$imageUrl');
 
-  try {
-    final response = await http.get(url).timeout(Duration(seconds: 10));
-    if (response.statusCode == 200) {
-      return jsonDecode(response.body) as Map<String, dynamic>;
-    } else {
-      print("Failed to analyze image: ${response.statusCode} - ${response.body}");
+    try {
+      final response = await http.get(url).timeout(Duration(seconds: 10));
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body) as Map<String, dynamic>;
+      } else {
+        print(
+            "Failed to analyze image: ${response.statusCode} - ${response.body}");
+        return null;
+      }
+    } catch (e) {
+      print("Error during image analysis: $e");
       return null;
     }
-  } catch (e) {
-    print("Error during image analysis: $e");
-    return null;
   }
-}
+
 /*-------------------------------*/
-Future<void> _verifyImage() async {
-  setState(() {
-    _isVerifying = true;
-    _verificationMessage = "Analyse de l'image en cours...";
-  });
-  
-  try {
-    final imageUrl = _urlController.text.trim();
-    
-    // Validation améliorée de l'URL
-    if (!Uri.parse(imageUrl).isAbsolute || !imageUrl.startsWith('http')) {
+  Future<void> _verifyImage() async {
+    setState(() {
+      _isVerifying = true;
+      _verificationMessage = "Analyse de l'image en cours...";
+    });
+
+    try {
+      final imageUrl = _urlController.text.trim();
+
+      // Validation améliorée de l'URL
+      if (!Uri.parse(imageUrl).isAbsolute || !imageUrl.startsWith('http')) {
+        setState(() {
+          _isVerifying = false;
+          _isVerified = false;
+          _verificationMessage =
+              'Veuillez entrer une URL d\'image valide commençant par http:// ou https://';
+        });
+        _showVerificationResult(false);
+        return;
+      }
+
+      // Vérifier si l'URL se termine par une extension d'image commune
+      bool isLikelyImage = ['.jpg', '.jpeg', '.png', '.gif', '.bmp', '.webp']
+          .any((ext) => imageUrl.toLowerCase().contains(ext));
+
+      if (!isLikelyImage) {
+        // Ajouter un avertissement mais continuer
+        setState(() {
+          _verificationMessage =
+              "L'URL ne semble pas pointer vers une image, mais nous essayons quand même...";
+        });
+      }
+
+      final response = await startImageVerification();
+
+      if (response == null) {
+        setState(() {
+          _isVerifying = false;
+          _isVerified = false;
+          _verificationMessage =
+              "Échec de la communication avec le serveur. Veuillez réessayer.";
+        });
+        _showVerificationResult(false);
+        return;
+      }
+
+      final success = response['success'] ?? false;
+      final message = response['message'] ?? 'Aucun message fourni';
+      final analysis = response['analysis'] as Map<String, dynamic>?;
+      final error = response['error'];
+
+      bool isRelated = analysis?['related'] ?? false;
+      String details = analysis?['details'] ?? 'Aucun détail fourni';
+
+      String displayMessage = success
+          ? "$message\n\n$details"
+          : "Erreur: $message\n${error != null ? 'Détails techniques: $error' : ''}";
+
+      setState(() {
+        _isVerifying = false;
+        _isVerified = success && isRelated;
+        _verificationMessage = displayMessage;
+      });
+
+      _showVerificationResult(success && isRelated);
+    } catch (e) {
       setState(() {
         _isVerifying = false;
         _isVerified = false;
-        _verificationMessage = 'Veuillez entrer une URL d\'image valide commençant par http:// ou https://';
+        _verificationMessage =
+            'Erreur lors de l\'analyse de l\'image: ${e.toString()}';
       });
       _showVerificationResult(false);
-      return;
     }
-    
-    // Vérifier si l'URL se termine par une extension d'image commune
-    bool isLikelyImage = ['.jpg', '.jpeg', '.png', '.gif', '.bmp', '.webp']
-        .any((ext) => imageUrl.toLowerCase().contains(ext));
-    
-    if (!isLikelyImage) {
-      // Ajouter un avertissement mais continuer
-      setState(() {
-        _verificationMessage = "L'URL ne semble pas pointer vers une image, mais nous essayons quand même...";
-      });
-    }
-    
-    final response = await startImageVerification();
-    
-    if (response == null) {
-      setState(() {
-        _isVerifying = false;
-        _isVerified = false;
-        _verificationMessage = "Échec de la communication avec le serveur. Veuillez réessayer.";
-      });
-      _showVerificationResult(false);
-      return;
-    }
-    
-    final success = response['success'] ?? false;
-    final message = response['message'] ?? 'Aucun message fourni';
-    final analysis = response['analysis'] as Map<String, dynamic>?;
-    final error = response['error'];
-    
-    bool isRelated = analysis?['related'] ?? false;
-    String details = analysis?['details'] ?? 'Aucun détail fourni';
-    
-    String displayMessage = success 
-        ? "$message\n\n$details" 
-        : "Erreur: $message\n${error != null ? 'Détails techniques: $error' : ''}";
-    
-    setState(() {
-      _isVerifying = false;
-      _isVerified = success && isRelated;
-      _verificationMessage = displayMessage;
-    });
-    
-    _showVerificationResult(success && isRelated);
-  } catch (e) {
-    setState(() {
-      _isVerifying = false;
-      _isVerified = false;
-      _verificationMessage = 'Erreur lors de l\'analyse de l\'image: ${e.toString()}';
-    });
-    _showVerificationResult(false);
   }
-}
 
   /****************************** */
 
@@ -198,190 +205,199 @@ Future<void> _verifyImage() async {
       _isVerifying = true;
     });
 
- try {
-    final info = _textController.text;
-    final response = await startScraping();
+    try {
+      final info = _textController.text;
+      final response = await startScraping();
 
-    bool isTrusted = false;
-    String message = 'Information could not be verified.';
-    String accuracy = '0%'; // Réinitialisation avec valeur par défaut
+      bool isTrusted = false;
+      String message = 'Information could not be verified.';
+      String accuracy = '0%'; // Réinitialisation avec valeur par défaut
 
-    if (response != null) {
-      final validResults = (response['results'] as List?)?.where((r) => r['data'] != null).toList() ?? [];
-      isTrusted = response['foundResults'] ?? false;
+      if (response != null) {
+        final validResults = (response['results'] as List?)
+                ?.where((r) => r['data'] != null)
+                .toList() ??
+            [];
+        isTrusted = response['foundResults'] ?? false;
 
-      if (isTrusted && validResults.isNotEmpty) {
-        final firstResult = validResults.first['data'] as Map<String, dynamic>?;
-        // Convertir en chaîne avec % si ce n'est pas déjà une chaîne
-        var rawAccuracy = firstResult?['accuracy'];
-        accuracy = rawAccuracy is String 
-          ? rawAccuracy 
-          : '${rawAccuracy ?? 0}%'; // Convertir int en String avec %
-        message = 'Information verified and found reliable. This information is confirmed by trusted medical sources.\n\nAccuracy: $accuracy';
-        final sources = validResults.map((r) => r['data']['source'] ?? 'Unknown source').toList();
-        if (sources.isNotEmpty) {
-          message += '\n\nSources: ${sources.join(", ")}';
+        if (isTrusted && validResults.isNotEmpty) {
+          final firstResult =
+              validResults.first['data'] as Map<String, dynamic>?;
+          // Convertir en chaîne avec % si ce n'est pas déjà une chaîne
+          var rawAccuracy = firstResult?['accuracy'];
+          accuracy = rawAccuracy is String
+              ? rawAccuracy
+              : '${rawAccuracy ?? 0}%'; // Convertir int en String avec %
+          message =
+              'Information verified and found reliable. This information is confirmed by trusted medical sources.\n\nAccuracy: $accuracy';
+          final sources = validResults
+              .map((r) => r['data']['source'] ?? 'Unknown source')
+              .toList();
+          if (sources.isNotEmpty) {
+            message += '\n\nSources: ${sources.join(", ")}';
+          }
+        } else {
+          message =
+              'Information could not be verified in trusted medical sources. We recommend consulting official health organizations for reliable information.';
         }
-      } else {
-        message = 'Information could not be verified in trusted medical sources. We recommend consulting official health organizations for reliable information.';
       }
+
+      setState(() {
+        _isVerifying = false;
+        _isVerified = isTrusted;
+        _verificationMessage = message;
+        this.accuracy = accuracy; // Mettre à jour la variable d'état
+      });
+
+      _showVerificationResult(isTrusted);
+    } catch (e) {
+      setState(() {
+        _isVerifying = false;
+        _isVerified = false;
+        _verificationMessage = 'Error during verification: ${e.toString()}';
+        accuracy = '0%'; // Réinitialiser en cas d'erreur
+      });
+      _showVerificationResult(false);
     }
-
-    setState(() {
-      _isVerifying = false;
-      _isVerified = isTrusted;
-      _verificationMessage = message;
-      this.accuracy = accuracy; // Mettre à jour la variable d'état
-    });
-
-    _showVerificationResult(isTrusted);
-  } catch (e) {
-    setState(() {
-      _isVerifying = false;
-      _isVerified = false;
-      _verificationMessage = 'Error during verification: ${e.toString()}';
-      accuracy = '0%'; // Réinitialiser en cas d'erreur
-    });
-    _showVerificationResult(false);
   }
-}
-void _showVerificationResult(bool isRelated) {
-  _popupAnimationController.reset();
 
-  showDialog(
-    context: context,
-    barrierColor: Colors.black.withOpacity(0.6),
-    builder: (context) => BackdropFilter(
-      filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
-      child: Dialog(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
-        child: Material(
-          type: MaterialType.transparency,
-          child: Container(
-            width: 340,
-            constraints: const BoxConstraints(maxHeight: 500),
-            padding: const EdgeInsets.all(28),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(28),
-              boxShadow: [
-                BoxShadow(
-                  color: isRelated
-                      ? Colors.green.withOpacity(0.4)
-                      : Colors.red.withOpacity(0.4),
-                  blurRadius: 24,
-                  spreadRadius: 4,
-                  offset: const Offset(0, 10),
-                )
-              ],
-              border: Border.all(
-                color: isRelated
-                    ? Colors.green.withOpacity(0.3)
-                    : Colors.orange.withOpacity(0.3),
-                width: 2,
-              ),
-            ),
-            child: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  if (isRelated) ...[
-                    ResultIconWidget(
-                      isVerified: isRelated,
-                      controller: _popupAnimationController,
-                    ),
-                    const SizedBox(height: 20),
-                    Text(
-                      'Checking everything health related',
-                      style: TextStyle(
-                        fontSize: 26,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.green.shade700,
-                        letterSpacing: 0.5,
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      _verificationMessage,
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 16,
-                        height: 1.5,
-                        color: Colors.grey.shade700,
-                      ),
-                    ),
-                    const SizedBox(height: 28),
-                  ] else ...[
-                    ResultIconWidget(
-                      isVerified: isRelated,
-                      controller: _popupAnimationController,
-                    ),
-                    const SizedBox(height: 20),
-                    Text(
-                      'Attention!',
-                      style: TextStyle(
-                        fontSize: 26,
-                        fontWeight: FontWeight.bold,
-                        color: const Color.fromARGB(255, 239, 64, 0),
-                        letterSpacing: 0.5,
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      _verificationMessage,
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 16,
-                        height: 1.5,
-                        color: Colors.grey.shade700,
-                      ),
-                    ),
-                    const SizedBox(height: 28),
-                  ],
-                  ElevatedButton(
-                    onPressed: () {
-                      Navigator.of(context).pop();
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: isRelated
-                          ? Colors.green.shade600
-                          : Colors.orange.shade600,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(
-                          vertical: 16, horizontal: 32),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      elevation: 8,
-                      shadowColor: isRelated
-                          ? Colors.green.withOpacity(0.5)
-                          : Colors.orange.withOpacity(0.5),
-                    ),
-                    child: const Text(
-                      'Compris',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: 0.5,
-                      ),
-                    ),
-                  ),
+  void _showVerificationResult(bool isRelated) {
+    _popupAnimationController.reset();
+
+    showDialog(
+      context: context,
+      barrierColor: Colors.black.withOpacity(0.6),
+      builder: (context) => BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
+        child: Dialog(
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          insetPadding:
+              const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+          child: Material(
+            type: MaterialType.transparency,
+            child: Container(
+              width: 340,
+              constraints: const BoxConstraints(maxHeight: 500),
+              padding: const EdgeInsets.all(28),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(28),
+                boxShadow: [
+                  BoxShadow(
+                    color: isRelated
+                        ? Colors.green.withOpacity(0.4)
+                        : Colors.red.withOpacity(0.4),
+                    blurRadius: 24,
+                    spreadRadius: 4,
+                    offset: const Offset(0, 10),
+                  )
                 ],
+                border: Border.all(
+                  color: isRelated
+                      ? Colors.green.withOpacity(0.3)
+                      : Colors.orange.withOpacity(0.3),
+                  width: 2,
+                ),
+              ),
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (isRelated) ...[
+                      ResultIconWidget(
+                        isVerified: isRelated,
+                        controller: _popupAnimationController,
+                      ),
+                      const SizedBox(height: 20),
+                      Text(
+                        'Checking everything health related',
+                        style: TextStyle(
+                          fontSize: 26,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.green.shade700,
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        _verificationMessage,
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 16,
+                          height: 1.5,
+                          color: Colors.grey.shade700,
+                        ),
+                      ),
+                      const SizedBox(height: 28),
+                    ] else ...[
+                      ResultIconWidget(
+                        isVerified: isRelated,
+                        controller: _popupAnimationController,
+                      ),
+                      const SizedBox(height: 20),
+                      Text(
+                        'Attention!',
+                        style: TextStyle(
+                          fontSize: 26,
+                          fontWeight: FontWeight.bold,
+                          color: const Color.fromARGB(255, 239, 64, 0),
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        _verificationMessage,
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 16,
+                          height: 1.5,
+                          color: Colors.grey.shade700,
+                        ),
+                      ),
+                      const SizedBox(height: 28),
+                    ],
+                    ElevatedButton(
+                      onPressed: () {
+                        Navigator.of(context).pop();
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: isRelated
+                            ? Colors.green.shade600
+                            : Colors.orange.shade600,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(
+                            vertical: 16, horizontal: 32),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        elevation: 8,
+                        shadowColor: isRelated
+                            ? Colors.green.withOpacity(0.5)
+                            : Colors.orange.withOpacity(0.5),
+                      ),
+                      child: const Text(
+                        'Compris',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
         ),
       ),
-    ),
-  );
-}
+    );
+  }
 
   Future<Map<String, dynamic>?> startScraping() async {
     String info = _textController.text;
-    final url =
-        Uri.parse('http://192.168.242.40:3000/scraper/start?info=$info');
+    final url = Uri.parse('http://172.16.1.63:3005/scraper/start?info=$info');
 
     try {
       final response = await http.get(url);
@@ -633,177 +649,201 @@ void _showVerificationResult(bool isRelated) {
                       const SizedBox(height: 38),
 
                       // Bouton de vérification avec animation - CORRIGÉ ICI
-                  // Bouton de vérification avec animation - CORRIGÉ ICI
+                      // Bouton de vérification avec animation - CORRIGÉ ICI
 // Bouton de vérification avec animation - CORRIGÉ
-AnimatedBuilder(
-  animation: _buttonAnimationController,
-  builder: (context, child) {
-    return Container(
-      width: double.infinity,
-      height: 64,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: Color(0xFF0A6EB4).withOpacity(
-                0.2 + 0.1 * _buttonAnimationController.value),
-            blurRadius: 12 + 8 * _buttonAnimationController.value,
-            spreadRadius: 2 + _buttonAnimationController.value,
-            offset: Offset(0, 6),
-          ),
-        ],
-      ),
-      child: ElevatedButton(
-        onPressed: (_isVerifying ||
-                (_urlController.text.isEmpty && _textController.text.isEmpty) ||
-                (_urlController.text.isNotEmpty && _textController.text.isNotEmpty))
-            ? null
-            : () {
-                if (_urlController.text.isNotEmpty && _textController.text.isEmpty) {
-                  final url = _urlController.text.trim();
-                  if (!Uri.parse(url).isAbsolute || !url.startsWith('http')) {
-                    setState(() {
-                      _verificationMessage = 'URL invalide. Veuillez entrer une URL complète commençant par http:// ou https://';
-                    });
-                    _showVerificationResult(false);
-                  } else {
-                    _verifyImage();
-                  }
-                } else if (_textController.text.isNotEmpty && _urlController.text.isEmpty) {
-                  _verifyInformation();
-                } else if (_textController.text.isNotEmpty && _urlController.text.isNotEmpty) {
-                  setState(() {
-                    _verificationMessage =
-                        'Veuillez ne remplir qu\'un seul champ (texte ou URL).';
-                  });
-                  _showVerificationResult(false);
-                } else {
-                  setState(() {
-                    _verificationMessage = 'Veuillez remplir au moins un champ.';
-                  });
-                  _showVerificationResult(false);
-                }
-              },
-        style: ElevatedButton.styleFrom(
-          backgroundColor: Color(0xFF0A6EB4),
-          foregroundColor: Colors.white,
-          elevation: 0,
-          padding: EdgeInsets.zero,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
-          ),
-          disabledBackgroundColor: Color(0xFF0A6EB4).withOpacity(0.6), // Couleur plus claire quand désactivé
-        ),
-        child: _isVerifying
-            ? Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  SizedBox(
-                    width: 24,
-                    height: 24,
-                    child: CircularProgressIndicator(
-                      color: Colors.white,
-                      strokeWidth: 3,
-                    ),
-                  ),
-                  SizedBox(width: 12),
-                  Text(
-                    'Analyse en cours...',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ],
-              )
-            : Stack(
-                children: [
-                  // Effet de lumière animé sur le bouton
-                  Positioned.fill(
-                    child: Transform.translate(
-                      offset: Offset(
-                          _buttonAnimationController.value * 300 - 150, 0),
-                      child: Container(
-                        width: 60,
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            colors: [
-                              Colors.white.withOpacity(0),
-                              Colors.white.withOpacity(0.2),
-                              Colors.white.withOpacity(0),
-                            ],
-                            stops: [0.0, 0.5, 1.0],
-                          ),
-                        ),
+                      AnimatedBuilder(
+                        animation: _buttonAnimationController,
+                        builder: (context, child) {
+                          return Container(
+                            width: double.infinity,
+                            height: 64,
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(20),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Color(0xFF0A6EB4).withOpacity(0.2 +
+                                      0.1 * _buttonAnimationController.value),
+                                  blurRadius:
+                                      12 + 8 * _buttonAnimationController.value,
+                                  spreadRadius:
+                                      2 + _buttonAnimationController.value,
+                                  offset: Offset(0, 6),
+                                ),
+                              ],
+                            ),
+                            child: ElevatedButton(
+                              onPressed: (_isVerifying ||
+                                      (_urlController.text.isEmpty &&
+                                          _textController.text.isEmpty) ||
+                                      (_urlController.text.isNotEmpty &&
+                                          _textController.text.isNotEmpty))
+                                  ? null
+                                  : () {
+                                      if (_urlController.text.isNotEmpty &&
+                                          _textController.text.isEmpty) {
+                                        final url = _urlController.text.trim();
+                                        if (!Uri.parse(url).isAbsolute ||
+                                            !url.startsWith('http')) {
+                                          setState(() {
+                                            _verificationMessage =
+                                                'URL invalide. Veuillez entrer une URL complète commençant par http:// ou https://';
+                                          });
+                                          _showVerificationResult(false);
+                                        } else {
+                                          _verifyImage();
+                                        }
+                                      } else if (_textController
+                                              .text.isNotEmpty &&
+                                          _urlController.text.isEmpty) {
+                                        _verifyInformation();
+                                      } else if (_textController
+                                              .text.isNotEmpty &&
+                                          _urlController.text.isNotEmpty) {
+                                        setState(() {
+                                          _verificationMessage =
+                                              'Veuillez ne remplir qu\'un seul champ (texte ou URL).';
+                                        });
+                                        _showVerificationResult(false);
+                                      } else {
+                                        setState(() {
+                                          _verificationMessage =
+                                              'Veuillez remplir au moins un champ.';
+                                        });
+                                        _showVerificationResult(false);
+                                      }
+                                    },
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Color(0xFF0A6EB4),
+                                foregroundColor: Colors.white,
+                                elevation: 0,
+                                padding: EdgeInsets.zero,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(20),
+                                ),
+                                disabledBackgroundColor: Color(0xFF0A6EB4)
+                                    .withOpacity(
+                                        0.6), // Couleur plus claire quand désactivé
+                              ),
+                              child: _isVerifying
+                                  ? Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
+                                      children: [
+                                        SizedBox(
+                                          width: 24,
+                                          height: 24,
+                                          child: CircularProgressIndicator(
+                                            color: Colors.white,
+                                            strokeWidth: 3,
+                                          ),
+                                        ),
+                                        SizedBox(width: 12),
+                                        Text(
+                                          'Analyse en cours...',
+                                          style: TextStyle(
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                      ],
+                                    )
+                                  : Stack(
+                                      children: [
+                                        // Effet de lumière animé sur le bouton
+                                        Positioned.fill(
+                                          child: Transform.translate(
+                                            offset: Offset(
+                                                _buttonAnimationController
+                                                            .value *
+                                                        300 -
+                                                    150,
+                                                0),
+                                            child: Container(
+                                              width: 60,
+                                              decoration: BoxDecoration(
+                                                gradient: LinearGradient(
+                                                  colors: [
+                                                    Colors.white.withOpacity(0),
+                                                    Colors.white
+                                                        .withOpacity(0.2),
+                                                    Colors.white.withOpacity(0),
+                                                  ],
+                                                  stops: [0.0, 0.5, 1.0],
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                        // Contenu du bouton
+                                        Center(
+                                          child: Row(
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.center,
+                                            children: [
+                                              Container(
+                                                width: 40,
+                                                height: 40,
+                                                decoration: BoxDecoration(
+                                                  color: Colors.white
+                                                      .withOpacity(0.2),
+                                                  shape: BoxShape.circle,
+                                                ),
+                                                child: Icon(Icons.search,
+                                                    color: Colors.white,
+                                                    size: 24),
+                                              ),
+                                              const SizedBox(width: 16),
+                                              const Text(
+                                                'Vérifier cette information',
+                                                style: TextStyle(
+                                                  fontSize: 18,
+                                                  fontWeight: FontWeight.bold,
+                                                  letterSpacing: 0.5,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                            ),
+                          );
+                        },
                       ),
-                    ),
-                  ),
-                  // Contenu du bouton
-                  Center(
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Container(
-                          width: 40,
-                          height: 40,
-                          decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.2),
-                            shape: BoxShape.circle,
-                          ),
-                          child: Icon(Icons.search, color: Colors.white, size: 24),
-                        ),
-                        const SizedBox(width: 16),
-                        const Text(
-                          'Vérifier cette information',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            letterSpacing: 0.5,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-      ),
-    );
-  },
-),
-const SizedBox(height: 24),
+                      const SizedBox(height: 24),
 
 // Information supplémentaire
-Container(
-  padding: EdgeInsets.all(16),
-  decoration: BoxDecoration(
-    color: Colors.blue.shade50,
-    borderRadius: BorderRadius.circular(16),
-    border: Border.all(
-      color: Colors.blue.shade100,
-      width: 1,
-    ),
-  ),
-  child: Row(
-    children: [
-      Icon(
-        Icons.info_outline,
-        color: Color(0xFF0A6EB4),
-        size: 24,
-      ),
-      SizedBox(width: 12),
-      Expanded(
-        child: Text(
-          'Notre système utilise l\'intelligence artificielle pour analyser la fiabilité des informations médicales',
-          style: TextStyle(
-            fontSize: 14,
-            color: Colors.grey.shade700,
-          ),
-        ),
-      ),
-    ],
-  ),
-),
-const SizedBox(height: 24),
+                      Container(
+                        padding: EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: Colors.blue.shade50,
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: Colors.blue.shade100,
+                            width: 1,
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(
+                              Icons.info_outline,
+                              color: Color(0xFF0A6EB4),
+                              size: 24,
+                            ),
+                            SizedBox(width: 12),
+                            Expanded(
+                              child: Text(
+                                'Notre système utilise l\'intelligence artificielle pour analyser la fiabilité des informations médicales',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  color: Colors.grey.shade700,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 24),
                     ],
                   ),
                 ),

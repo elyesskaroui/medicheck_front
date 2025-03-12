@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_application_1/Services/HttpService';
-import 'package:flutter_application_1/screens/Verification.dart';
 import 'package:flutter_application_1/screens/login_screen.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:flutter_application_1/screens/text_input_field.dart';
+import 'package:flutter_application_1/services/api_service.dart';
 
 // Définition de kBodyText
 const kBodyText = TextStyle(
@@ -23,7 +22,9 @@ class _ForgotPasswordState extends State<ForgotPassword> {
   final TextEditingController _emailController = TextEditingController();
   bool _isLoading = false;
 
-  void _resetPassword() {
+  final ApiService _apiService = ApiService();
+
+  Future<void> _resetPassword() async {
     if (_emailController.text.isEmpty) {
       _showSnackBar('Please enter your email address.', Colors.red);
       return;
@@ -33,18 +34,28 @@ class _ForgotPasswordState extends State<ForgotPassword> {
       _isLoading = true;
     });
 
-    Future.delayed(const Duration(seconds: 2), () {
-      setState(() {
-        _isLoading = false;
-      });
-
-      HttpService().forgotPassword(_emailController.text);
-      // Redirection vers VerificationScreen après validation
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (context) => VerificationScreen()),
-      );
-    });
+    try {
+      print(
+          'Attempting to send forgot password request for email: ${_emailController.text}');
+      await _apiService.forgotPassword(_emailController.text);
+      if (mounted) {
+        _showSnackBar(
+            'If this email is registered, you will receive a password reset email.',
+            Colors.green);
+      }
+    } catch (e) {
+      print('Error during forgot password request: $e');
+      if (mounted) {
+        _showSnackBar('Failed to send reset password email. Please try again.',
+            Colors.red);
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
   }
 
   void _showSnackBar(String message, Color color) {
