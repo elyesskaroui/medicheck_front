@@ -1,0 +1,83 @@
+PODS:
+  - Flutter (1.0.0)
+  - flutter_secure_storage (6.0.0):
+    - Flutter
+  - image_picker_ios (0.0.1):
+    - Flutter
+  - libphonenumber_plugin (0.0.1):
+    - Flutter
+    - PhoneNumberKit
+  - path_provider_foundation (0.0.1):
+    - Flutter
+    - FlutterMacOS
+  - PhoneNumberKit (3.3.4):
+    - PhoneNumberKit/PhoneNumberKitCore (= 3.3.4)
+    - PhoneNumberKit/UIKit (= 3.3.4)
+  - PhoneNumberKit/PhoneNumberKitCore (3.3.4)
+  - PhoneNumberKit/UIKit (3.3.4):
+    - PhoneNumberKit/PhoneNumberKitCore
+  - share_plus (0.0.1):
+    - Flutter
+  - shared_preferences_foundation (0.0.1):
+    - Flutter
+    - FlutterMacOS
+  - speech_to_text (0.0.1):
+    - Flutter
+    - Try
+  - Try (2.1.1)
+  - url_launcher_ios (0.0.1):
+    - Flutter
+
+DEPENDENCIES:
+  - Flutter (from `Flutter`)
+  - flutter_secure_storage (from `.symlinks/plugins/flutter_secure_storage/ios`)
+  - image_picker_ios (from `.symlinks/plugins/image_picker_ios/ios`)
+  - libphonenumber_plugin (from `.symlinks/plugins/libphonenumber_plugin/ios`)
+  - path_provider_foundation (from `.symlinks/plugins/path_provider_foundation/darwin`)
+  - PhoneNumberKit (= 3.3.4)
+  - share_plus (from `.symlinks/plugins/share_plus/ios`)
+  - shared_preferences_foundation (from `.symlinks/plugins/shared_preferences_foundation/darwin`)
+  - speech_to_text (from `.symlinks/plugins/speech_to_text/ios`)
+  - url_launcher_ios (from `.symlinks/plugins/url_launcher_ios/ios`)
+
+SPEC REPOS:
+  https://github.com/CocoaPods/Specs.git:
+    - PhoneNumberKit
+    - Try
+
+EXTERNAL SOURCES:
+  Flutter:
+    :path: Flutter
+  flutter_secure_storage:
+    :path: ".symlinks/plugins/flutter_secure_storage/ios"
+  image_picker_ios:
+    :path: ".symlinks/plugins/image_picker_ios/ios"
+  libphonenumber_plugin:
+    :path: ".symlinks/plugins/libphonenumber_plugin/ios"
+  path_provider_foundation:
+    :path: ".symlinks/plugins/path_provider_foundation/darwin"
+  share_plus:
+    :path: ".symlinks/plugins/share_plus/ios"
+  shared_preferences_foundation:
+    :path: ".symlinks/plugins/shared_preferences_foundation/darwin"
+  speech_to_text:
+    :path: ".symlinks/plugins/speech_to_text/ios"
+  url_launcher_ios:
+    :path: ".symlinks/plugins/url_launcher_ios/ios"
+
+SPEC CHECKSUMS:
+  Flutter: e0871f40cf51350855a761d2e70bf5af5b9b5de7
+  flutter_secure_storage: 1ed9476fba7e7a782b22888f956cce43e2c62f13
+  image_picker_ios: 7fe1ff8e34c1790d6fff70a32484959f563a928a
+  libphonenumber_plugin: d134f173b22bfa5ede50887071f087f309277f8c
+  path_provider_foundation: 080d55be775b7414fd5a5ef3ac137b97b097e564
+  PhoneNumberKit: 441e8b26ec88d598e3591de9061eff18f5dd12e8
+  share_plus: 50da8cb520a8f0f65671c6c6a99b3617ed10a58a
+  shared_preferences_foundation: 9e1978ff2562383bd5676f64ec4e9aa8fa06a6f7
+  speech_to_text: ae2abc312e619ff1c53e675a9fc4d785a15c03bb
+  Try: 5ef669ae832617b3cee58cb2c6f99fb767a4ff96
+  url_launcher_ios: 694010445543906933d732453a59da0a173ae33d
+
+PODFILE CHECKSUM: be25fa4967cea16421a9dd40831ab668ec96da8b
+
+COCOAPODS: 1.16.2

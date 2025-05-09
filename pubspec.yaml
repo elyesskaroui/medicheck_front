@@ -1,0 +1,55 @@
+name: flutter_application_1
+description: "A new Flutter project."
+publish_to: 'none' # Remove this line if you wish to publish to pub.dev
+version: 1.0.0+1
+
+environment:
+  sdk: ">=3.0.0 <4.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_login: ^5.0.0
+  lottie: ^1.2.1
+  dio: ^5.1.1
+  json_annotation: ^4.8.1
+  http: ^1.1.0
+  provider: ^6.1.2
+  web_socket_channel: ^2.4.0
+  shared_preferences: ^2.0.15
+  iconly: ^1.0.0
+  socket_io_client: ^2.0.3
+  http_parser: ^4.0.0
+  google_fonts: ^6.1.0
+  cupertino_icons: ^1.0.8
+  # Update to latest compatible version
+  google_generative_ai: ^0.0.1-dev
+  flutter_markdown: ^0.6.17
+  speech_to_text: ^6.3.0
+  # Add missing animation and UI packages
+  flutter_animate: ^4.5.0
+  glassmorphism: ^3.0.0
+  avatar_glow: ^2.0.2
+  flutter_secure_storage: ^9.2.4
+  hive: ^2.2.3
+  hive_flutter: ^1.1.0
+  path_provider: ^2.1.2
+  font_awesome_flutter: ^10.6.0
+  url_launcher: ^6.1.5
+  share_plus: ^10.1.4
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^4.0.0
+  build_runner: ^2.4.6
+  json_serializable: ^6.7.1
+  image_picker: ^0.8.4+4
+
+flutter:
+  uses-material-design: true
+  assets:
+    - asset/images/medical_background.png
+    - asset/images/stope.jpg
+    - asset/images/test.jpg
+    - asset/images/logo1.png
