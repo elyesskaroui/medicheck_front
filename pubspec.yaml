@@ -14,9 +14,13 @@ dependencies:
   flutter_login: ^5.0.0
   cupertino_icons: ^1.0.8
   lottie: ^1.2.1
-  http: ^1.3.0
+  http: ^1.3.0  # Gardez seulement cette version plus récente
   shared_preferences: ^2.5.1
   percent_indicator: ^4.2.5
+  # Dépendances supplémentaires nécessaires pour votre popup
+  google_fonts: ^6.1.0   # Pour améliorer la typographie (optionnel mais recommandé)
+  fl_chart: ^0.65.0
+  flutter_svg: ^2.0.9  # Ajout du package flutter_svg     # Alternative pour des graphiques plus avancés (optionnel)
 
 
 dev_dependencies:

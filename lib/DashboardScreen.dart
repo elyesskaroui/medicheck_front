@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_application_1/Services/config.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 
@@ -37,7 +38,7 @@ class HomePage extends StatelessWidget {
 
 // Service pour récupérer les statistiques
 class StatsService {
-  final String baseUrl = 'http://192.168.122.40:3000/scraper';
+  final String baseUrl = '${Config.baseUrl}/scraper';
 
   Future<Map<String, dynamic>> getVerificationStats() async {
     try {

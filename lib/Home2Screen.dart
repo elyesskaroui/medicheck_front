@@ -5,6 +5,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_application_1/DashboardScreen.dart';
 import 'package:flutter_application_1/Home1Screen.dart';
+import 'package:flutter_application_1/Services/config.dart';
+import 'package:flutter_application_1/Social.dart';
 import 'dart:ui';
 
 import 'package:http/http.dart' as http;
@@ -20,10 +22,8 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
   int _selectedIndex = 0;
   late AnimationController _fadeController;
   late AnimationController _scaleController;
-  late AnimationController _rotationController;
   late Animation<double> _fadeAnimation;
   late Animation<double> _scaleAnimation;
-  late Animation<double> _rotationAnimation;
 
   // Utilisez le contrôleur de page pour des transitions fluides
   final PageController _pageController = PageController();
@@ -33,14 +33,12 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
     MedInfoVerifierApp(),
     MyApp(),
     MedicalVerificationApp(),
-
-    // Placeholder pour l'écran Social à implémenter
-    const Center(child: Text('Video', style: TextStyle(fontSize: 24))),
+    Social(),
   ];
 
   // Titres des écrans
-  final List<String> _titles = ['Home', 'Dashboard', 'Video'];
-
+  final List<String> _titles = ['Home', 'Dashboard', 'Video', 'Social'];
+ 
   // Couleurs pour le thème professionnel
   final Color _primaryColor = const Color(0xFF2563EB);
   final Color _secondaryColor = const Color(0xFFEFF6FF);
@@ -51,7 +49,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
   void initState() {
     super.initState();
 
-    // Configuration des animations
+    // Configuration des animations simplifiées
     _fadeController = AnimationController(
       duration: const Duration(milliseconds: 300),
       vsync: this,
@@ -59,11 +57,6 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
 
     _scaleController = AnimationController(
       duration: const Duration(milliseconds: 400),
-      vsync: this,
-    );
-
-    _rotationController = AnimationController(
-      duration: const Duration(milliseconds: 500),
       vsync: this,
     );
 
@@ -75,14 +68,9 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
       CurvedAnimation(parent: _scaleController, curve: Curves.easeOutCubic),
     );
 
-    _rotationAnimation = Tween<double>(begin: 0.0, end: 0.02).animate(
-      CurvedAnimation(parent: _rotationController, curve: Curves.elasticOut),
-    );
-
     // Démarre les animations au lancement
     _fadeController.forward();
     _scaleController.forward();
-    _rotationController.forward();
 
     // Configure la barre de statut pour une apparence immersive
     SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
@@ -95,7 +83,6 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
   void dispose() {
     _fadeController.dispose();
     _scaleController.dispose();
-    _rotationController.dispose();
     _pageController.dispose();
     super.dispose();
   }
@@ -109,10 +96,8 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
       // Réinitialise et relance les animations
       _fadeController.reset();
       _scaleController.reset();
-      _rotationController.reset();
       _fadeController.forward();
       _scaleController.forward();
-      _rotationController.forward();
 
       // Anime le changement de page
       _pageController.animateToPage(
@@ -125,459 +110,96 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
 
   @override
   Widget build(BuildContext context) {
-    return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: SystemUiOverlayStyle.dark,
-      child: Scaffold(
-        backgroundColor: _secondaryColor.withOpacity(0.7),
-        extendBody: true,
-        extendBodyBehindAppBar: true,
-        body: Stack(
-          children: [
-            // Fond avec dégradé animé
-            AnimatedBuilder(
-              animation: _rotationAnimation,
-              builder: (context, child) {
-                return Transform.rotate(
-                  angle: _rotationAnimation.value,
-                  child: Container(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                        colors: [
-                          _secondaryColor,
-                          Colors.white,
-                          _secondaryColor.withOpacity(0.7),
-                        ],
-                        stops: const [0.0, 0.6, 1.0],
-                      ),
-                    ),
-                    child: CustomPaint(
-                      painter: BackgroundPatternPainter(
-                        color: _primaryColor.withOpacity(0.05),
-                      ),
-                      size: Size.infinite,
-                    ),
-                  ),
-                );
-              },
-            ),
-
-            // Contenu principal avec AppBar 3D
-            NestedScrollView(
-              headerSliverBuilder:
-                  (BuildContext context, bool innerBoxIsScrolled) {
-                return <Widget>[
-                  SliverAppBar(
-                    expandedHeight: 160.0,
-                    floating: true,
-                    pinned: true,
-                    snap: true,
-                    backgroundColor: Colors.transparent,
-                    elevation: 0,
-                    leadingWidth: 0,
-                    leading: const SizedBox.shrink(),
-                    flexibleSpace: LayoutBuilder(
-                      builder:
-                          (BuildContext context, BoxConstraints constraints) {
-                        final top = constraints.biggest.height;
-                        final expandRatio =
-                            (top - kToolbarHeight) / (160.0 - kToolbarHeight);
-                        final opacity =
-                            (expandRatio.clamp(0.0, 1.0) * 0.6) + 0.4;
-
-                        return FlexibleSpaceBar(
-                          titlePadding:
-                              const EdgeInsets.only(left: 20, bottom: 16),
-                          title: AnimatedOpacity(
-                            opacity: expandRatio > 0.5 ? 1.0 : 0.0,
-                            duration: const Duration(milliseconds: 200),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                ShaderMask(
-                                  shaderCallback: (bounds) {
-                                    return LinearGradient(
-                                      colors: [
-                                        _primaryColor,
-                                        _accentColor,
-                                      ],
-                                      begin: Alignment.topLeft,
-                                      end: Alignment.bottomRight,
-                                    ).createShader(bounds);
-                                  },
-                                  child: Text(
-                                    _titles[_selectedIndex],
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 24.0,
-                                      fontWeight: FontWeight.w600,
-                                      letterSpacing: 0.7,
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(width: 8),
-                                Container(
-                                  height: 8,
-                                  width: 8,
-                                  decoration: BoxDecoration(
-                                    color: _accentColor,
-                                    shape: BoxShape.circle,
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: _accentColor.withOpacity(0.6),
-                                        blurRadius: 6,
-                                        spreadRadius: 1,
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          background: Stack(
-                            children: [
-                              // Fond avec effet de verre
-                              ClipRect(
-                                child: BackdropFilter(
-                                  filter:
-                                      ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-                                  child: AnimatedContainer(
-                                    duration: const Duration(milliseconds: 300),
-                                    decoration: BoxDecoration(
-                                      gradient: LinearGradient(
-                                        begin: Alignment.topLeft,
-                                        end: Alignment.bottomRight,
-                                        colors: [
-                                          Colors.white.withOpacity(0.7),
-                                          _secondaryColor.withOpacity(0.7),
-                                        ],
-                                      ),
-                                      border: Border(
-                                        bottom: BorderSide(
-                                          color: _primaryColor.withOpacity(0.1),
-                                          width: 1,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ),
-
-                              // Élément 3D dans l'AppBar
-                              Positioned(
-                                right: -50,
-                                top: -20,
-                                child: AnimatedBuilder(
-                                  animation: _rotationAnimation,
-                                  builder: (context, child) {
-                                    return Transform(
-                                      transform: Matrix4.identity()
-                                        ..setEntry(3, 2, 0.001)
-                                        ..rotateY(_rotationAnimation.value * 5)
-                                        ..rotateX(_rotationAnimation.value * 3),
-                                      alignment: Alignment.center,
-                                      child: Opacity(
-                                        opacity: 0.6,
-                                        child: Container(
-                                          height: 120,
-                                          width: 120,
-                                          decoration: BoxDecoration(
-                                            gradient: LinearGradient(
-                                              colors: [
-                                                _primaryColor.withOpacity(0.5),
-                                                _accentColor.withOpacity(0.5),
-                                              ],
-                                              begin: Alignment.topLeft,
-                                              end: Alignment.bottomRight,
-                                            ),
-                                            borderRadius:
-                                                BorderRadius.circular(30),
-                                            boxShadow: [
-                                              BoxShadow(
-                                                color: _primaryColor
-                                                    .withOpacity(0.3),
-                                                blurRadius: 25,
-                                                spreadRadius: 5,
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                      ),
-                                    );
-                                  },
-                                ),
-                              ),
-
-                              // Contenu de l'AppBar
-                              Padding(
-                                padding:
-                                    const EdgeInsets.fromLTRB(20, 60, 20, 0),
-                                child: Row(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    // Logo avec effet 3D
-                                    AnimatedBuilder(
-                                      animation: _rotationAnimation,
-                                      builder: (context, child) {
-                                        return Transform(
-                                          transform: Matrix4.identity()
-                                            ..setEntry(3, 2, 0.001)
-                                            ..rotateY(
-                                                _rotationAnimation.value * 2),
-                                          alignment: Alignment.center,
-                                          child: Row(
-                                            children: [
-                                              Container(
-                                                padding:
-                                                    const EdgeInsets.all(8),
-                                                decoration: BoxDecoration(
-                                                  color: Colors.white,
-                                                  borderRadius:
-                                                      BorderRadius.circular(12),
-                                                  boxShadow: [
-                                                    BoxShadow(
-                                                      color: _primaryColor
-                                                          .withOpacity(0.2),
-                                                      blurRadius: 10,
-                                                      offset:
-                                                          const Offset(0, 4),
-                                                    ),
-                                                  ],
-                                                ),
-                                                child: Image.asset(
-                                                  'assets/logo.png',
-                                                  height: 32,
-                                                  errorBuilder: (context, error,
-                                                          stackTrace) =>
-                                                      Icon(
-                                                    Icons.medical_services,
-                                                    color: _primaryColor,
-                                                    size: 32,
-                                                  ),
-                                                ),
-                                              ),
-                                              const SizedBox(width: 12),
-                                              AnimatedBuilder(
-                                                animation: _fadeAnimation,
-                                                builder: (context, child) {
-                                                  return Opacity(
-                                                    opacity: expandRatio > 0.7
-                                                        ? 0.0
-                                                        : 1.0,
-                                                    child: Text(
-                                                      _titles[_selectedIndex],
-                                                      style: TextStyle(
-                                                        color: _darkColor,
-                                                        fontSize: 22.0,
-                                                        fontWeight:
-                                                            FontWeight.w600,
-                                                        letterSpacing: 0.5,
-                                                      ),
-                                                    ),
-                                                  );
-                                                },
-                                              ),
-                                            ],
-                                          ),
-                                        );
-                                      },
-                                    ),
-
-                                    // Actions avec effet de surbrillance
-                                    Row(
-                                      children: [
-                                        _buildAppBarButton(
-                                          icon: Icons.notifications_outlined,
-                                          notificationCount: 3,
-                                        ),
-                                        const SizedBox(width: 8),
-                                        _buildAppBarButton(
-                                          icon: Icons.settings_outlined,
-                                        ),
-                                      ],
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-                ];
-              },
-              // Corps avec animation de changement de page
-              body: AnimatedBuilder(
-                animation: _fadeAnimation,
-                builder: (context, child) {
-                  return Opacity(
-                    opacity: _fadeAnimation.value,
-                    child: AnimatedBuilder(
-                      animation: _scaleAnimation,
-                      builder: (context, child) {
-                        return Transform.scale(
-                          scale: _scaleAnimation.value,
-                          child: Padding(
-                            // Ajustement du padding pour éviter les débordements
-                            padding: const EdgeInsets.fromLTRB(16, 8, 16, 80),
-                            child: PageView(
-                              controller: _pageController,
-                              physics: const NeverScrollableScrollPhysics(),
-                              children: _screens,
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-                  );
-                },
-              ),
-            ),
-
-            // Barre de navigation améliorée avec effet de verre
-            Positioned(
-              bottom: 20, // Légèrement remonté
-              left: 24,
-              right: 24,
+    // Utiliser MediaQuery pour obtenir les dimensions de l'écran et les zones sécurisées
+    final MediaQueryData mediaQuery = MediaQuery.of(context);
+    final double bottomPadding = mediaQuery.padding.bottom;
+   
+    return Scaffold(
+      backgroundColor: _secondaryColor.withOpacity(0.8),
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        elevation: 0,
+        title: Text(
+          _titles[_selectedIndex],
+          style: TextStyle(
+            color: _darkColor,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        actions: [
+          IconButton(
+            icon: Icon(Icons.notifications_outlined, color: _darkColor),
+            onPressed: () {},
+          ),
+          IconButton(
+            icon: Icon(Icons.settings_outlined, color: _darkColor),
+            onPressed: () {},
+          ),
+        ],
+      ),
+      // SafeArea pour respecter les zones sécurisées du téléphone
+      body: SafeArea(
+        bottom: false, // Ne pas ajouter de padding en bas car on le gère manuellement
+        child: AnimatedBuilder(
+          animation: _fadeAnimation,
+          builder: (context, child) {
+            return Opacity(
+              opacity: _fadeAnimation.value,
               child: AnimatedBuilder(
                 animation: _scaleAnimation,
                 builder: (context, child) {
                   return Transform.scale(
                     scale: _scaleAnimation.value,
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(24),
-                      child: BackdropFilter(
-                        filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-                        child: Container(
-                          height: 70, // Hauteur réduite
-                          decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.7),
-                            borderRadius: BorderRadius.circular(24),
-                            border: Border.all(
-                              color: Colors.white.withOpacity(0.4),
-                              width: 1.5,
-                            ),
-                            boxShadow: [
-                              BoxShadow(
-                                color: _primaryColor.withOpacity(0.1),
-                                blurRadius: 20,
-                                spreadRadius: 2,
-                                offset: const Offset(0, 6),
-                              ),
-                            ],
-                          ),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                            children: [
-                              _buildNavItem(0, Icons.home_rounded, 'Home'),
-                              _buildNavItem(
-                                  1, Icons.dashboard_rounded, 'Dashboard'),
-                              _buildNavItem(
-                                  2, Icons.video_library_rounded, 'video'),
-                            ],
-                          ),
-                        ),
-                      ),
+                    child: PageView(
+                      controller: _pageController,
+                      physics: const NeverScrollableScrollPhysics(),
+                      children: _screens,
                     ),
                   );
                 },
               ),
+            );
+          },
+        ),
+      ),
+      // Utiliser BottomNavigationBar standard au lieu d'une barre personnalisée
+      bottomNavigationBar: Container(
+        // Ajouter padding pour respecter la zone sécurisée du bas
+        padding: EdgeInsets.only(bottom: bottomPadding),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.1),
+              blurRadius: 10,
+              spreadRadius: 0,
             ),
           ],
         ),
-      ),
-    );
-  }
-
-  Widget _buildNavItem(int index, IconData icon, String label) {
-    final isSelected = _selectedIndex == index;
-
-    return GestureDetector(
-      onTap: () => _onItemTapped(index),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 350),
-        curve: Curves.easeOutCubic,
-        // Padding réduit pour éviter les débordements
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-        decoration: BoxDecoration(
-          color:
-              isSelected ? _primaryColor.withOpacity(0.15) : Colors.transparent,
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: isSelected
-              ? [
-                  BoxShadow(
-                    color: _primaryColor.withOpacity(0.1),
-                    blurRadius: 12,
-                    spreadRadius: 1,
-                    offset: const Offset(0, 2),
-                  ),
-                ]
-              : null,
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            AnimatedContainer(
-              duration: const Duration(milliseconds: 350),
-              height: 28, // Taille réduite
-              width: 28, // Taille réduite
-              decoration: BoxDecoration(
-                color: isSelected
-                    ? _primaryColor.withOpacity(0.1)
-                    : Colors.transparent,
-                borderRadius: BorderRadius.circular(12),
-                boxShadow: isSelected
-                    ? [
-                        BoxShadow(
-                          color: _primaryColor.withOpacity(0.2),
-                          blurRadius: 8,
-                          spreadRadius: 1,
-                          offset: const Offset(0, 2),
-                        ),
-                      ]
-                    : null,
-              ),
-              child: Center(
-                child: Icon(
-                  icon,
-                  color: isSelected ? _primaryColor : const Color(0xFF94A3B8),
-                  size: 20, // Taille d'icône réduite
-                ),
-              ),
+        child: BottomNavigationBar(
+          currentIndex: _selectedIndex,
+          onTap: _onItemTapped,
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          type: BottomNavigationBarType.fixed,
+          selectedItemColor: _primaryColor,
+          unselectedItemColor: Colors.grey,
+          items: const [
+            BottomNavigationBarItem(
+              icon: Icon(Icons.home_rounded),
+              label: 'Home',
             ),
-            const SizedBox(height: 4), // Espacement réduit
-            AnimatedDefaultTextStyle(
-              duration: const Duration(milliseconds: 350),
-              style: TextStyle(
-                fontSize: 11, // Police plus petite
-                fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-                color: isSelected ? _primaryColor : const Color(0xFF94A3B8),
-                letterSpacing: 0.2,
-              ),
-              child: Text(label),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.dashboard_rounded),
+              label: 'Dashboard',
             ),
-            // Indicateur de sélection
-            AnimatedContainer(
-              duration: const Duration(milliseconds: 350),
-              height: 3, // Hauteur réduite
-              width: isSelected ? 16 : 0, // Largeur réduite
-              margin: const EdgeInsets.only(top: 3), // Marge réduite
-              decoration: BoxDecoration(
-                color: isSelected ? _primaryColor : Colors.transparent,
-                borderRadius: BorderRadius.circular(2),
-                boxShadow: isSelected
-                    ? [
-                        BoxShadow(
-                          color: _primaryColor.withOpacity(0.4),
-                          blurRadius: 6,
-                          spreadRadius: 1,
-                        ),
-                      ]
-                    : null,
-              ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.video_library_rounded),
+              label: 'Video',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.people_rounded),
+              label: 'Social',
             ),
           ],
         ),
@@ -647,32 +269,6 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
       ),
     );
   }
-}
-
-// Painter pour le motif de fond
-class BackgroundPatternPainter extends CustomPainter {
-  final Color color;
-
-  BackgroundPatternPainter({required this.color});
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = color
-      ..style = PaintingStyle.fill;
-
-    final spacing = 40.0;
-    final radius = 3.0;
-
-    for (double x = 0; x < size.width; x += spacing) {
-      for (double y = 0; y < size.height; y += spacing) {
-        canvas.drawCircle(Offset(x, y), radius, paint);
-      }
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
 
 class MedicalVerificationApp extends StatelessWidget {
@@ -755,7 +351,7 @@ class _VideoVerificationScreenState extends State<VideoVerificationScreen>
       // Appel à l'API avec l'URL fournie
       final response = await http.get(
         Uri.parse(
-            'http://192.168.122.40:3000/scraper/analyzeVideo?videoUrl=$url'),
+            '${Config.baseUrl}/scraper/analyzeVideo?videoUrl=$url'),
         headers: {'Content-Type': 'application/json'},
       );
 
@@ -1079,7 +675,7 @@ class _VideoVerificationScreenState extends State<VideoVerificationScreen>
       // Appel à l'API avec l'URL fournie
       final response = await http.get(
         Uri.parse(
-            'http://192.168.122.40:3000/scraper/analyzeVideo?videoUrl=$url'),
+            '${Config.baseUrl}/scraper/analyzeVideo?videoUrl=$url'),
         headers: {'Content-Type': 'application/json'},
       );
 

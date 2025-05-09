@@ -1,6 +1,7 @@
 import 'dart:collection';
 import 'dart:math';
 import 'package:flutter/material.dart';
+import 'package:flutter_application_1/Services/config.dart';
 import 'dart:ui';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
@@ -105,7 +106,7 @@ class _MedInfoVerifierHomeState extends State<MedInfoVerifierHome>
   Future<Map<String, dynamic>?> startImageVerification() async {
     final imageUrl = _urlController.text;
     final url = Uri.parse(
-        'http://192.168.122.40:3000/scraper/analyzeimage?imageUrl=$imageUrl');
+        '${Config.baseUrl}/scraper/analyzeimage?imageUrl=$imageUrl');
 
     try {
       final response = await http.get(url).timeout(Duration(seconds: 10));
@@ -752,7 +753,7 @@ class _MedInfoVerifierHomeState extends State<MedInfoVerifierHome>
   Future<Map<String, dynamic>?> startScraping() async {
     String info = _textController.text;
     final url =
-        Uri.parse('http://192.168.122.40:3000/scraper/start?info=$info');
+        Uri.parse('${Config.baseUrl}/scraper/start?info=$info');
 
     try {
       final response = await http.get(url);
