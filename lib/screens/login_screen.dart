@@ -1,15 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_application_1/models/SignUpResponse.dart';
+import 'package:flutter_application_1/Home1Screen.dart';
+import 'package:flutter_application_1/Home2Screen.dart';
+import 'package:flutter_application_1/Services/auth_api/login.dart';
 import 'package:flutter_application_1/screens/SignUp_Screen.dart';
-import 'package:flutter_application_1/screens/main_screen.dart';
 import 'package:flutter_application_1/screens/password_input.dart';
 import 'package:flutter_application_1/screens/text_input_field.dart';
-import 'package:flutter_application_1/services/api_service.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
-// Définition de kBodyText
 const kBodyText = TextStyle(
   fontSize: 16,
   color: Colors.white,
@@ -17,7 +14,7 @@ const kBodyText = TextStyle(
 );
 
 class LoginScreen extends StatefulWidget {
-  const LoginScreen({super.key});
+  const LoginScreen({Key? key}) : super(key: key);
 
   @override
   _LoginScreenState createState() => _LoginScreenState();
@@ -27,60 +24,10 @@ class _LoginScreenState extends State<LoginScreen> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   bool _isLoading = false;
-  final bool _isSuccess = false;
-  bool _rememberCredentials = true; // Default to true for better UX
-  
-  // Create storage for secure credentials
-  final _secureStorage = const FlutterSecureStorage();
 
-  @override
-  void initState() {
-    super.initState();
-    _loadSavedCredentials();
-  }
-
-  // Load saved credentials when app starts
-  Future<void> _loadSavedCredentials() async {
-    try {
-      final savedEmail = await _secureStorage.read(key: 'secure_email');
-      final savedPassword = await _secureStorage.read(key: 'secure_password');
-      
-      if (savedEmail != null && savedPassword != null) {
-        setState(() {
-          _emailController.text = savedEmail;
-          _passwordController.text = savedPassword;
-        });
-        
-        print('Credentials loaded successfully');
-      }
-    } catch (e) {
-      print('Error loading credentials: $e');
-    }
-  }
-
-  // Save credentials securely
-  Future<void> _saveCredentials(String email, String password) async {
-    if (_rememberCredentials) {
-      try {
-        await _secureStorage.write(key: 'secure_email', value: email);
-        await _secureStorage.write(key: 'secure_password', value: password);
-        print('Credentials saved securely');
-      } catch (e) {
-        print('Error saving credentials: $e');
-      }
-    }
-  }
-
-  // Submit form and perform login
-  void _submitForm() async {
+  Future<void> _submitForm() async {
     if (_emailController.text.isEmpty || _passwordController.text.isEmpty) {
-      _showSnackBar('Please enter both email and password.', Colors.red);
-      return;
-    }
-
-    final emailRegex = RegExp(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$');
-    if (!emailRegex.hasMatch(_emailController.text)) {
-      _showSnackBar('Please enter a valid email address.', Colors.red);
+      _showSnackBar('Please fill in all fields.', Colors.red);
       return;
     }
 
@@ -88,102 +35,26 @@ class _LoginScreenState extends State<LoginScreen> {
       _isLoading = true;
     });
 
-    try {
-      final apiService = ApiService();
-      final loginResponse = await apiService.login(
-        _emailController.text,
-        _passwordController.text,
-      );
-      
-      if (loginResponse != null) {
-        // Save credentials securely after successful login
-        await _saveCredentials(_emailController.text, _passwordController.text);
-        
-        // Save user data to SharedPreferences
-        final prefs = await SharedPreferences.getInstance();
-        await prefs.setString('accessToken', loginResponse.accessToken);
-
-        try {
-          var userInfo = await apiService.getUserByToken(loginResponse.accessToken);
-          
-          if (userInfo != null) {
-            // Create user instance
-            final User user = User(
-              id: userInfo.id,
-              name: userInfo.name,
-              email: userInfo.email,
-              profilePicture: userInfo.profilePicture,
-              bannedUntil: userInfo.bannedUntil,
-            );
-            
-            // Navigate to main screen
-            if (mounted) {
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => MainScreen(
-                    isDarkMode: false,
-                    onDarkModeChanged: (value) {},
-                    loggedUser: user,
-                  ),
-                ),
-              );
-            }
-          } else {
-            // Fallback if user info is null but login was successful
-            _handleFallbackNavigation(loginResponse);
-          }
-        } catch (userError) {
-          print('Error getting user info: $userError');
-          // Handle the error by still allowing login with basic info
-          _handleFallbackNavigation(loginResponse);
-        }
-      } else {
-        _showSnackBar('Login failed. Please check your credentials.', Colors.red);
-      }
-    } catch (e) {
-      print('Login error: $e');
-      _showSnackBar('Login failed: ${e.toString()}', Colors.red);
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-      }
-    }
-  }
-
-  // Handle navigation when user info can't be retrieved
-  void _handleFallbackNavigation(dynamic loginResponse) {
-    // Extract username from email
-    String username = _emailController.text.split('@')[0];
-    // Capitalize first letter
-    String displayName = username.isNotEmpty 
-        ? username[0].toUpperCase() + username.substring(1)
-        : "User";
-        
-    final User fallbackUser = User(
-      id: loginResponse.userId ?? "unknown",
-      name: displayName,
+    final result = await LoginApi.login(
       email: _emailController.text,
-      profilePicture: "", 
+      password: _passwordController.text,
     );
-    
-    if (mounted) {
+
+    setState(() {
+      _isLoading = false;
+    });
+
+    if (result['success'] == true) {
+      _showSnackBar(result['message'], Colors.green);
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(
-          builder: (context) => MainScreen(
-            isDarkMode: false,
-            onDarkModeChanged: (value) {},
-            loggedUser: fallbackUser,
-          ),
-        ),
+        MaterialPageRoute(builder: (context) => MainScreen()),
       );
+    } else {
+      _showSnackBar(result['message'], Colors.red);
     }
   }
 
-  // Show Snackbar
   void _showSnackBar(String message, Color color) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -208,23 +79,23 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
               ),
             ),
-            // Effet de flou pour améliorer la lisibilité
+            // Overlay sombre pour améliorer la lisibilité
             Container(
               color: Colors.black.withOpacity(0.5),
             ),
-            // Contenu principal
+            // Contenu scrollable
             SingleChildScrollView(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   const SizedBox(height: 100),
-                  // Logo avec fond transparent
+                  // Logo centré
                   Center(
                     child: Container(
                       width: 160,
                       height: 160,
-                      decoration: const BoxDecoration(
-                        color: Colors.white24, // Fond transparent
+                      decoration: BoxDecoration(
+                        color: Colors.white24,
                         shape: BoxShape.circle,
                       ),
                       child: const Padding(
@@ -237,7 +108,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                   ),
                   const SizedBox(height: 20),
-                  // Titre principal
+                  // Titre "Sign In"
                   const Center(
                     child: Text(
                       'Sign In',
@@ -270,81 +141,70 @@ class _LoginScreenState extends State<LoginScreen> {
                           inputAction: TextInputAction.done,
                         ),
                         const SizedBox(height: 10),
-                        
-                        // Row with Remember Me and Forgot Password
-                        Row(
-                          children: [
-                            // Remember Me checkbox
-                            Checkbox(
-                              value: _rememberCredentials,
-                              onChanged: (value) {
-                                setState(() {
-                                  _rememberCredentials = value ?? true;
-                                });
-                              },
-                              checkColor: Colors.white,
-                              fillColor: MaterialStateProperty.resolveWith<Color>(
-                                (Set<MaterialState> states) {
-                                  if (states.contains(MaterialState.disabled)) {
-                                    return Colors.grey.withOpacity(.32);
-                                  }
-                                  return Colors.blue;
-                                },
-                              ),
-                            ),
-                            Text(
-                              'Remember Me',
-                              style: kBodyText.copyWith(fontSize: 14),
-                            ),
-                            const Spacer(),
-                            // Forgot Password link
-                            GestureDetector(
-                              onTap: () {
-                                Navigator.pushNamed(context, '/forgot-password');
-                              },
-                              child: const Text(
-                                'Forgot Password',
-                                style: kBodyText,
-                              ),
-                            ),
-                          ],
+                        // Lien "Forgot Password"
+                        GestureDetector(
+                          onTap: () {
+                            Navigator.pushNamed(context, '/forgot-password');
+                          },
+                          child: const Text(
+                            'Forgot Password',
+                            style: kBodyText,
+                          ),
                         ),
-                        
                         const SizedBox(height: 25),
-                        // Bouton de connexion avec animation
+                        // Bouton "Login" avec UX améliorée
                         Center(
-                          child: AnimatedContainer(
-                            duration: const Duration(milliseconds: 500),
-                            width: _isLoading ? 70 : 150,
-                            height: 50,
-                            decoration: BoxDecoration(
-                              color: _isSuccess ? Colors.green : Colors.blue,
-                              borderRadius: BorderRadius.circular(25),
-                            ),
-                            child: _isLoading
-                                ? const CircularProgressIndicator(
-                                    color: Colors.white,
-                                  )
-                                : TextButton(
-                                    onPressed: () {
-                                      _submitForm();
-                                    },
-                                    child: const Text(
-                                      'Login',
-                                      style: TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 18,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
+                          child: GestureDetector(
+                            onTap: _isLoading ? null : _submitForm,
+                            child: AnimatedContainer(
+                              duration: const Duration(milliseconds: 300),
+                              width: _isLoading ? 70 : 180,
+                              height: 55,
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(30),
+                                gradient: const LinearGradient(
+                                  colors: [Color(0xFF1E88E5), Color(0xFF42A5F5)],
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                ),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(0.2),
+                                    blurRadius: 8,
+                                    offset: const Offset(2, 4),
                                   ),
+                                ],
+                              ),
+                              child: _isLoading
+                                  ? const Center(
+                                      child: CircularProgressIndicator(
+                                        color: Colors.white,
+                                      ),
+                                    )
+                                  : Row(
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      children: const [
+                                        Icon(Icons.login, color: Colors.white, size: 24),
+                                        SizedBox(width: 8),
+                                        Text(
+                                          'Login',
+                                          style: TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 18,
+                                            fontWeight: FontWeight.bold,
+                                            letterSpacing: 1.2,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                            ),
                           ),
                         ),
                         const SizedBox(height: 25),
                       ],
                     ),
                   ),
-                  // Lien "Créer un compte"
+                  // Lien "Create New Account"
                   GestureDetector(
                     onTap: () {
                       Navigator.push(
@@ -357,7 +217,8 @@ class _LoginScreenState extends State<LoginScreen> {
                     child: Container(
                       decoration: const BoxDecoration(
                         border: Border(
-                            bottom: BorderSide(width: 1, color: Colors.white)),
+                          bottom: BorderSide(width: 1, color: Colors.white),
+                        ),
                       ),
                       child: const Text(
                         'Create New Account',

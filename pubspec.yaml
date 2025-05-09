@@ -10,22 +10,18 @@ dependencies:
   flutter:
     sdk: flutter
   flutter_login: ^5.0.0
-  lottie: ^1.2.1
   dio: ^5.1.1
   json_annotation: ^4.8.1
-  http: ^1.1.0
   provider: ^6.1.2
   web_socket_channel: ^2.4.0
-  shared_preferences: ^2.0.15
+
   iconly: ^1.0.0
   socket_io_client: ^2.0.3
   http_parser: ^4.0.0
-  google_fonts: ^6.1.0
-  cupertino_icons: ^1.0.8
   # Update to latest compatible version
   google_generative_ai: ^0.0.1-dev
   flutter_markdown: ^0.6.17
-  speech_to_text: ^6.3.0
+  speech_to_text: ^7.0.0
   # Add missing animation and UI packages
   flutter_animate: ^4.5.0
   glassmorphism: ^3.0.0
@@ -37,6 +33,16 @@ dependencies:
   font_awesome_flutter: ^10.6.0
   url_launcher: ^6.1.5
   share_plus: ^10.1.4
+  cupertino_icons: ^1.0.8
+  lottie: ^1.2.1
+  http: ^1.3.0  # Gardez seulement cette version plus récente
+  shared_preferences: ^2.5.1
+  percent_indicator: ^4.2.5
+  # Dépendances supplémentaires nécessaires pour votre popup
+  google_fonts: ^6.1.0   # Pour améliorer la typographie (optionnel mais recommandé)
+  fl_chart: ^0.65.0
+  flutter_svg: ^2.0.9  # Ajout du package flutter_svg     # Alternative pour des graphiques plus avancés (optionnel)
+
 
 dev_dependencies:
   flutter_test:
@@ -53,3 +59,4 @@ flutter:
     - asset/images/stope.jpg
     - asset/images/test.jpg
     - asset/images/logo1.png
+    - asset/images/report.jpg

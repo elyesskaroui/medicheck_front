@@ -1,13 +1,8 @@
-import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_application_1/Services/auth_api/Sign_up.dart';
 import 'package:flutter_application_1/screens/password_input.dart';
 import 'package:flutter_application_1/screens/text_input_field.dart';
-import 'package:flutter_application_1/services/api_service.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import 'package:http_parser/http_parser.dart';
-import 'package:image_picker/image_picker.dart';
-import 'dart:io';
-import 'package:shared_preferences/shared_preferences.dart'; // Add shared_preferences for saving data locally
 
 const kBodyText = TextStyle(
   fontSize: 16,
@@ -16,128 +11,53 @@ const kBodyText = TextStyle(
 );
 
 class SignUpScreen extends StatefulWidget {
-  const SignUpScreen({super.key});
+  const SignUpScreen({Key? key}) : super(key: key);
 
   @override
   _SignUpScreenState createState() => _SignUpScreenState();
 }
 
 class _SignUpScreenState extends State<SignUpScreen> {
+  final TextEditingController _lastNameController = TextEditingController();
   final TextEditingController _firstNameController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   bool _isLoading = false;
-  bool _isSuccess = false;
-  File? _profilePicture;
 
-  final ImagePicker _picker = ImagePicker();
-
-  // Pick image function
-  Future<void> _pickImage() async {
-    try {
-      final pickedFile = await _picker.pickImage(source: ImageSource.gallery);
-      if (pickedFile != null) {
-        setState(() {
-          _profilePicture = File(pickedFile.path);
-        });
-        print('Image selected: ${pickedFile.path}');
-      } else {
-        print('No image selected.');
-      }
-    } catch (e) {
-      print('Error picking image: $e');
+  Future<void> _submitForm() async {
+    if (_lastNameController.text.isEmpty ||
+        _firstNameController.text.isEmpty ||
+        _emailController.text.isEmpty ||
+        _passwordController.text.isEmpty) {
+      _showSnackBar('Please fill in all fields.', Colors.red);
+      return;
     }
-  }
 
-  // Save user data to SharedPreferences
-  Future<void> _saveUserData(String name, String email, String profilePicture) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('name', name);
-    await prefs.setString('email', email);
-    await prefs.setString('profilePicture', profilePicture);
-  }
+    setState(() {
+      _isLoading = true;
+    });
 
-  // Submit the form and make the API call
-  void _submitForm() async {
-  final emailRegex = RegExp(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$');
-  if (!emailRegex.hasMatch(_emailController.text)) {
-    _showSnackBar('Please enter a valid email address.', Colors.red);
-    return;
-  }
-
-  // Validate input fields first
-  if (_firstNameController.text.isEmpty ||
-      _emailController.text.isEmpty ||
-      _passwordController.text.isEmpty ||
-      _profilePicture == null
-      ) {
-    _showSnackBar('Please fill in all fields.', Colors.red);
-    return;
-  }
-
-  setState(() {
-    _isLoading = true;
-  });
-
-  try {
-    final apiService = ApiService();
-    
-    // Handle file upload
-    MultipartFile? profilePictureFile;
-    if (_profilePicture != null) {
-      try {
-        // When preparing your profile picture in SignUp_Screen.dart:
-profilePictureFile = await MultipartFile.fromFile(
-  _profilePicture!.path,
-  filename: _profilePicture!.path.split('/').last,
-  contentType: MediaType.parse('image/jpeg'), // Explicitly set content type
-);
-        print('Profile picture prepared for upload: ${profilePictureFile.filename}');
-      } catch (e) {
-        print('Error preparing profile picture: $e');
-        // Continue with signup even if image preparation fails
-      }
-    }
-    
-    final signUpResponse = await apiService.signUp(
-      _firstNameController.text,
-      _emailController.text,
-      _passwordController.text,
-      profilePictureFile,
+    final result = await SignupApi.signup(
+      name: _lastNameController.text,
+      prenom: _firstNameController.text,
+      email: _emailController.text,
+      password: _passwordController.text,
     );
 
-    if (signUpResponse != null) {
-      setState(() {
-        _isSuccess = true;
-      });
-      _showSnackBar('Sign Up Successful!', Colors.green);
+    print('API Response: $result');
 
-      // Save the user data locally after successful sign-up
-      await _saveUserData(
-        _firstNameController.text,
-        _emailController.text,
-        _profilePicture != null ? _profilePicture!.path : '',
-      );
-
-      // Wait briefly to show success state
-      await Future.delayed(const Duration(milliseconds: 500));
-      
-      // Navigate to login screen
-      Navigator.pushReplacementNamed(context, '/signin');
-    } else {
-      _showSnackBar('Sign Up failed. Please try again.', Colors.red);
-    }
-  } catch (e) {
-    print('Error during signup: $e');
-    _showSnackBar('An error occurred: $e', Colors.red);
-  } finally {
     setState(() {
       _isLoading = false;
     });
-  }
-}
 
-  // Show snackbar with message
+    if (result['success'] == true) {
+      _showSnackBar(result['message'], Colors.green);
+      // Naviguer vers une autre page après le succès, si nécessaire
+    } else {
+      _showSnackBar(result['message'], Colors.red);
+    }
+  }
+
   void _showSnackBar(String message, Color color) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -153,64 +73,62 @@ profilePictureFile = await MultipartFile.fromFile(
       body: SafeArea(
         child: Stack(
           children: [
-            // Background image
+            // Image de fond
             Container(
               decoration: const BoxDecoration(
                 image: DecorationImage(
-                  image: AssetImage(
-                      'asset/images/test.jpg'), // Replace with your background image path
+                  image: AssetImage('asset/images/test.jpg'), // Vérifie le chemin de ton image
                   fit: BoxFit.cover,
                 ),
               ),
             ),
-            // Overlay for better readability
-            Container(
-              color: Colors.black.withOpacity(0.5),
-            ),
-            // Main content
+            Container(color: Colors.black.withOpacity(0.5)),
             SingleChildScrollView(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   const SizedBox(height: 80),
-                  // Main Title
+                  Center(
+                    child: Container(
+                      width: 160,
+                      height: 160,
+                      decoration: BoxDecoration(
+                        color: Colors.white24,
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Padding(
+                        padding: EdgeInsets.all(10),
+                        child: Image(
+                          image: AssetImage('asset/images/logo1.png'),
+                          fit: BoxFit.contain,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 20),
                   const Center(
                     child: Text(
                       'Sign Up',
                       style: TextStyle(
-                        color: Color.fromARGB(255, 224, 224, 224),
+                        color: Colors.white,
                         fontSize: 60,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
                   ),
                   const SizedBox(height: 40),
-                  // Profile Picture
-                  Center(
-                    child: GestureDetector(
-                      onTap: _pickImage,
-                      child: CircleAvatar(
-                        radius: 80,
-                        backgroundImage: _profilePicture != null
-                            ? FileImage(_profilePicture!)
-                            : null,
-                        child: _profilePicture == null
-                            ? const Icon(
-                                Icons.camera_alt,
-                                size: 50,
-                                color: Colors.white,
-                              )
-                            : null,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-                  // Sign Up Form
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 30.0),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.end,
                       children: [
+                        TextInputField(
+                          controller: _lastNameController,
+                          icon: FontAwesomeIcons.user,
+                          hint: 'Nom de famille',
+                          inputType: TextInputType.name,
+                          inputAction: TextInputAction.next,
+                        ),
                         const SizedBox(height: 20),
                         TextInputField(
                           controller: _firstNameController,
@@ -235,14 +153,13 @@ profilePictureFile = await MultipartFile.fromFile(
                           inputAction: TextInputAction.done,
                         ),
                         const SizedBox(height: 30),
-                        // Submit Button with animation
                         Center(
                           child: AnimatedContainer(
                             duration: const Duration(milliseconds: 500),
                             width: _isLoading ? 70 : 150,
                             height: 50,
                             decoration: BoxDecoration(
-                              color: _isSuccess ? Colors.green : Colors.blue,
+                              color: Colors.blue,
                               borderRadius: BorderRadius.circular(25),
                             ),
                             child: _isLoading
@@ -267,30 +184,20 @@ profilePictureFile = await MultipartFile.fromFile(
                     ),
                   ),
                   const SizedBox(height: 20),
-                  // Link to Login page
                   GestureDetector(
-                    onTap: () {
-                      Navigator.pop(context);
-                    },
-                    child: Container(
-                      decoration: const BoxDecoration(
-                        border: Border(
-                            bottom: BorderSide(
-                                width: 1, color: Colors.transparent)),
-                      ),
-                      child: RichText(
-                        text: TextSpan(
-                          style: kBodyText,
-                          children: [
-                            const TextSpan(text: 'Already have an account? '),
-                            TextSpan(
-                              text: 'Login',
-                              style: kBodyText.copyWith(
-                                  color: Colors.blue,
-                                  fontWeight: FontWeight.bold),
-                            ),
-                          ],
-                        ),
+                    onTap: () => Navigator.pop(context),
+                    child: RichText(
+                      text: TextSpan(
+                        style: kBodyText,
+                        children: [
+                          const TextSpan(text: 'Already have an account? '),
+                          TextSpan(
+                            text: 'Login',
+                            style: kBodyText.copyWith(
+                                color: Colors.blue,
+                                fontWeight: FontWeight.bold),
+                          ),
+                        ],
                       ),
                     ),
                   ),

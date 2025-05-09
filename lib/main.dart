@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
+
 import 'package:flutter_application_1/models/SignUpResponse.dart';
 import 'package:flutter_application_1/screens/ForgotPassword.dart';
-import 'package:flutter_application_1/screens/HomeScreen.dart';
 import 'package:flutter_application_1/screens/SignUp_Screen.dart';
 import 'package:flutter_application_1/screens/health_assistant_screen.dart';
 import 'package:flutter_application_1/screens/login_screen.dart';
@@ -13,9 +13,11 @@ import 'package:hive_flutter/hive_flutter.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:google_fonts/google_fonts.dart';
-
+import 'package:flutter_application_1/Screens/HomeScreen';
+//import 'package:flutter_application_1/screens/HomeScreen.dart';
+import 'package:flutter_application_1/screens/SignUp_Screen.dart';
+import 'package:flutter_application_1/screens/ForgotPassword.dart';  // Assure-toi que ce fichier existe
 import 'services/api_service.dart';
-
 void main() async {
   WidgetsFlutterBinding.ensureInitialized(); // Initialize Flutter binding for async main
 
@@ -45,6 +47,7 @@ void main() async {
     ),
   );
 }
+
 
 class MyApp extends StatelessWidget {
   final User? loggedUser;

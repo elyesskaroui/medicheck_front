@@ -1,0 +1,2 @@
+C:/Users/Esprit/OneDrive - ESPRIT/Bureau/piminteg/FrontPimIntegration/android/app/.cxx/Debug/676w4q5v/armeabi-v7a/CMakeFiles/edit_cache.dir
+C:/Users/Esprit/OneDrive - ESPRIT/Bureau/piminteg/FrontPimIntegration/android/app/.cxx/Debug/676w4q5v/armeabi-v7a/CMakeFiles/rebuild_cache.dir

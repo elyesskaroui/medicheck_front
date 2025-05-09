@@ -1,0 +1,2 @@
+C:/Users/Esprit/OneDrive - ESPRIT/Bureau/front_elyess/android/app/.cxx/Debug/5r2r154t/x86/CMakeFiles/edit_cache.dir
+C:/Users/Esprit/OneDrive - ESPRIT/Bureau/front_elyess/android/app/.cxx/Debug/5r2r154t/x86/CMakeFiles/rebuild_cache.dir
